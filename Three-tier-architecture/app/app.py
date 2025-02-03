@@ -33,9 +33,13 @@ class UserRepository:
         user = self.get_user_by_id(user_id)
         if user:
             for key, value in update_data.items():
-                if key in user:
-                    if key == "birthYear":
-                        user["age"] = datetime.now().year - value  # Update age if birthYear changes
+                # Always update age if 'birthYear' is provided,
+                # even if 'birthYear' is not in the user dict.
+                if key == "birthYear":
+                    user["age"] = datetime.now().year - value
+                    # Optionally, also store the birthYear if you need it later.
+                    user[key] = value
+                elif key in user:
                     user[key] = value
             return user
         return None
@@ -96,6 +100,7 @@ class UserService:
         required_fields = {"firstName", "lastName", "birthYear", "group"}
         if not all(field in user_data for field in required_fields):
             return False
+
         if not isinstance(user_data["firstName"], str) or not isinstance(user_data["lastName"], str):
             return False
         if not isinstance(user_data["birthYear"], int) or user_data["birthYear"] <= 1900 or user_data["birthYear"] > datetime.now().year:
