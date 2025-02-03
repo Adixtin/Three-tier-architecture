@@ -40,6 +40,13 @@ class UserRepository:
             return user
         return None
 
+    def delete_user(self, user_id):
+        user = self.get_user_by_id(user_id)
+        if user:
+            self.users = [u for u in self.users if u["id"] != user_id]
+            return user
+        return None
+
 class UserService:
     ALLOWED_GROUPS = {"user", "premium", "admin"}
 
@@ -71,6 +78,16 @@ class UserService:
             return {"error": "Invalid update data"}, 400
 
         user = self.repository.update_user(user_id, update_data)
+        if user:
+            return user, 200
+        return {"error": "User not found"}, 404
+
+    def delete_user(self, user_id):
+        if not isinstance(user_id, int) or user_id < 0:
+            return {"error": "Invalid user ID"}, 400
+
+        user = self.repository.delete_user(user_id)
+
         if user:
             return user, 200
         return {"error": "User not found"}, 404
@@ -129,6 +146,11 @@ def update_user(user_id):
         return jsonify({"error": "No update data provided"}), 400
 
     user, status = service.update_user(user_id, update_data)
+    return jsonify(user), status
+
+@app.route("/users/<int:user_id>", methods=["DELETE"])
+def delete_user(user_id):
+    user, status = service.delete_user(user_id)
     return jsonify(user), status
 
 
