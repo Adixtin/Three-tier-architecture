@@ -28,6 +28,18 @@ class UserRepository:
             if user["id"] == user_id:
                 return user
         return None
+
+    def update_user(self, user_id, update_data):
+        user = self.get_user_by_id(user_id)
+        if user:
+            for key, value in update_data.items():
+                if key in user:
+                    if key == "birthYear":
+                        user["age"] = datetime.now().year - value  # Update age if birthYear changes
+                    user[key] = value
+            return user
+        return None
+
 class UserService:
     ALLOWED_GROUPS = {"user", "premium", "admin"}
 
@@ -50,6 +62,18 @@ class UserService:
             return user, 200
         return {"error": "User not found"}, 400
 
+    def update_user(self, user_id, update_data):
+        if not isinstance(user_id, int) or user_id < 0:
+            return {"error": "Invalid user Id"}, 400
+
+        # Validate the update data
+        if not self.validate_update_data(update_data):
+            return {"error": "Invalid update data"}, 400
+
+        user = self.repository.update_user(user_id, update_data)
+        if user:
+            return user, 200
+        return {"error": "User not found"}, 404
 
     def validate_user_data(self, user_data):
         required_fields = {"firstName", "lastName", "birthYear", "group"}
@@ -60,6 +84,20 @@ class UserService:
         if not isinstance(user_data["birthYear"], int) or user_data["birthYear"] <= 1900 or user_data["birthYear"] > datetime.now().year:
             return False
         if user_data["group"] not in self.ALLOWED_GROUPS:
+            return False
+        return True
+
+    def validate_update_data(self, update_data):
+        allowed_fields = {"firstName", "lastName", "birthYear", "group"}
+        if not any(field in update_data for field in allowed_fields):
+            return False
+        if "firstName" in update_data and not isinstance(update_data["firstName"], str):
+            return False
+        if "lastName" in update_data and not isinstance(update_data["lastName"], str):
+            return False
+        if "birthYear" in update_data and (not isinstance(update_data["birthYear"], int) or update_data["birthYear"] <= 1900 or update_data["birthYear"] > datetime.now().year):
+            return False
+        if "group" in update_data and update_data["group"] not in self.ALLOWED_GROUPS:
             return False
         return True
 
@@ -83,6 +121,16 @@ def add_user():
     if user is None:
         return jsonify({"error": "Invalid user data"}), status
     return jsonify(user), status
+
+@app.route("/users/<int:user_id>", methods=["PATCH"])
+def update_user(user_id):
+    update_data = request.get_json()
+    if not update_data:
+        return jsonify({"error": "No update data provided"}), 400
+
+    user, status = service.update_user(user_id, update_data)
+    return jsonify(user), status
+
 
 if __name__ == "__main__":
     app.run(debug=True)
