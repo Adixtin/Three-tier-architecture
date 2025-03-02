@@ -7,7 +7,7 @@ class Repository:
 
     def add(self, data) -> dict:
         user = {
-            "id": self.next_id,
+            "user_id": self.next_id,
             "firstName": data["firstName"],
             "lastName": data["lastName"],
             "age": datetime.now().year - data["birthYear"],
@@ -24,7 +24,7 @@ class Repository:
 
     def get_by_id(self, user_id) -> None:
         for user in self.users:
-            if user["id"] == user_id:
+            if user["user_id"] == user_id:
                 return user
         return None
 
@@ -40,10 +40,10 @@ class Repository:
             return user
         return None
 
-    def delete_user(self, user_id):
+    def delet(self, user_id):
         user = self.get_by_id(user_id)
         if user:
-            self.users = [u for u in self.users if u["id"] != user_id]
+            self.users = [u for u in self.users if u["user_id"] != user_id]
             return user
         return None
         
