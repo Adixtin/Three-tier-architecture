@@ -1,59 +1,61 @@
-
-from app.repositry import Repository 
+from datetime import datetime
 
 class Controller:
+    ALLOWED_GROUPS = {"admin", "user", "guest"}
+
     def __init__(self, repository):
         self.repository = repository
 
-    def create_user(self, user_data):
-        if not self.validate_user_data(user_data):
-            return None, 400
-        return self.repository.add_user(user_data), 201
+    def create(self, data):
+        if not self.validate_data(data):
+            return {"error": "Invalid user data"}, 400
+        user = self.repository.add(data)
+        if user:
+            return user, 201
+        return {"error": "Failed to create user"}, 500
 
-    def get_all_users(self):
-        return self.repository.get_users(), 200
+    def get(self):
+        return self.repository.get(), 200
 
-    def get_user_by_id(self, user_id):
+    def get_by_id(self, user_id):
         if not isinstance(user_id, int) or user_id < 0:
             return {"error": "Invalid user Id"}, 400
-        user = self.repository.get_user_by_id(user_id)
+        user = self.repository.get_by_id(user_id)
         if user:
             return user, 200
         return {"error": "User not found"}, 400
 
-    def update_user(self, user_id, update_data):
+    def update(self, user_id, update_data):
         if not isinstance(user_id, int) or user_id < 0:
             return {"error": "Invalid user Id"}, 400
 
-        # Validate the update data
         if not self.validate_update_data(update_data):
             return {"error": "Invalid update data"}, 400
 
-        user = self.repository.update_user(user_id, update_data)
+        user = self.repository.update(user_id, update_data)
         if user:
             return user, 200
         return {"error": "User not found"}, 404
 
-    def delete_user(self, user_id):
+    def delete(self, user_id):
         if not isinstance(user_id, int) or user_id < 0:
             return {"error": "Invalid user ID"}, 400
 
-        user = self.repository.delete_user(user_id)
-
+        user = self.repository.delete(user_id)
         if user:
             return user, 200
         return {"error": "User not found"}, 404
 
-    def validate_user_data(self, user_data):
+    def validate_data(self, data):
         required_fields = {"firstName", "lastName", "birthYear", "group"}
-        if not all(field in user_data for field in required_fields):
+        if not all(field in data for field in required_fields):
             return False
 
-        if not isinstance(user_data["firstName"], str) or not isinstance(user_data["lastName"], str):
+        if not isinstance(data["firstName"], str) or not isinstance(data["lastName"], str):
             return False
-        if not isinstance(user_data["birthYear"], int) or user_data["birthYear"] <= 1900 or user_data["birthYear"] > datetime.now().year:
+        if not isinstance(data["birthYear"], int) or data["birthYear"] <= 1900 or data["birthYear"] > datetime.now().year:
             return False
-        if user_data["group"] not in self.ALLOWED_GROUPS:
+        if data["group"] not in self.ALLOWED_GROUPS:
             return False
         return True
 
@@ -70,4 +72,3 @@ class Controller:
         if "group" in update_data and update_data["group"] not in self.ALLOWED_GROUPS:
             return False
         return True
-
